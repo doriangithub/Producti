@@ -5,6 +5,8 @@
 #include "Producti.h"
 #include <iostream>
 #include "sqlite3.h"
+#include <vector>
+#include <set>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -306,13 +308,38 @@ int screenHandle(void)
 }
 
 
+TCHAR* GetFolderPath(TCHAR exePath)
+{
+	TCHAR folderPath[MAX_PATH];
+
+	
+
+
+	return folderPath;
+}
+
 int main()
 {
+	static const char DBFILENAME[] = "Producti.db";
+
+	// Check if database file is in the same folder
+	TCHAR exePath[MAX_PATH];
+
+	if (!GetModuleFileName(NULL, exePath, MAX_PATH))
+	{
+		printf("Cannot install service (%d)\n", GetLastError());
+		return 0;
+	}
+
+	// remove file name from the path
+	
+	TCHAR *folderPath = GetFolderPath(*exePath);
+
     int nRetCode = 0;
 
 	////////////////////// SETUP DATABASE  /////////////////////////
 
-	static const char DBFILENAME[] = "Producti.db";
+	
 
 	sqlite3 *db;
 	char *zErrMsg = 0;
