@@ -308,18 +308,44 @@ int screenHandle(void)
 }
 
 
-TCHAR* GetFolderPath(TCHAR exePath)
+TCHAR* GetFolderPath(TCHAR *exePath)
 {
-	TCHAR folderPath[MAX_PATH];
+	TCHAR *delim = _T("\\");
+	TCHAR *context;
+	TCHAR *name;
 
+	std::vector<TCHAR*> myPath;
+
+	name = _tcstok_s(exePath, delim, &context);
+	myPath.push_back(name);
 	
+	while (name != NULL)
+	{
+		name = _tcstok_s(NULL, delim, &context);
+		if (name != NULL)
+			myPath.push_back(name);
+	}
 
+	TCHAR newPath[_MAX_PATH];
+	myPath.pop_back(); // remove file name
 
-	return folderPath;
+	std::vector<int>::size_type sz = myPath.size();
+	wcscpy(newPath, myPath[0]);
+	wcscat(newPath, _T("\\"));
+
+	for (unsigned i = 1; i < sz; i++)
+	{
+		wcscat(newPath, myPath[i]);
+		wcscat(newPath, _T("\\"));
+	}
+
+	return newPath;
 }
 
 int main()
 {
+	int nRetCode = 0;
+
 	static const char DBFILENAME[] = "Producti.db";
 
 	// Check if database file is in the same folder
@@ -332,14 +358,10 @@ int main()
 	}
 
 	// remove file name from the path
-	
-	TCHAR *folderPath = GetFolderPath(*exePath);
+	TCHAR *folderPath = GetFolderPath(exePath);
 
-    int nRetCode = 0;
 
 	////////////////////// SETUP DATABASE  /////////////////////////
-
-	
 
 	sqlite3 *db;
 	char *zErrMsg = 0;
