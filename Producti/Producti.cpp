@@ -21,6 +21,25 @@ CWinApp theApp;
 
 using namespace std;
 
+/***********************************************************************************************/
+/*	Utility function to check if the file is exists                                       */
+/***********************************************************************************************/
+bool fileExists(LPCWSTR fileName_in)
+{
+	DWORD ftyp = GetFileAttributesW(fileName_in);
+	if (ftyp == INVALID_FILE_ATTRIBUTES)
+	{
+		cout << "Error: NO SUCH FILE!!!" << endl;
+		return false;  //something is wrong with your path!
+	}
+
+	if (ftyp & FILE_ATTRIBUTE_ARCHIVE)
+		return true;   // file exists!
+
+	return false;    // file not exists!
+}
+
+
 void drawSingelCharacter( HANDLE hConsole, LPCTSTR character, COORD coordScreen)
 {
 	DWORD dwConLengt = wcslen(character);
@@ -342,6 +361,18 @@ TCHAR* GetFolderPath(TCHAR *exePath)
 	return newPath;
 }
 
+
+/*********************************************************************************************/
+/*	 Convert STR to LPC									                                     */
+/*********************************************************************************************/
+LPCSTR makeLPCSTR(CString str)
+{
+	CStringA strA(str); // a helper string
+	LPCSTR newString = strA;
+	return newString;
+}
+
+
 int main()
 {
 	int nRetCode = 0;
@@ -357,8 +388,21 @@ int main()
 		return 0;
 	}
 
-	// remove file name from the path
+	// remove exe file name from the path
 	TCHAR *folderPath = GetFolderPath(exePath);
+
+	// add data base file name to the path
+	TCHAR *fileDB = L"Producti.db";
+	_tcscat_s(folderPath, 256, fileDB);
+
+	LPCWSTR lpszTest = folderPath;
+
+	bool rezultBoolFile;
+	rezultBoolFile = fileExists(lpszTest);	// bool dirExists(const std::string& dirName_in)
+	if (!rezultBoolFile)
+	{
+		//	create default database file
+	}
 
 
 	////////////////////// SETUP DATABASE  /////////////////////////
