@@ -7,6 +7,8 @@
 #include "sqlite3.h"
 #include <vector>
 #include <set>
+#include "atlstr.h"
+#include <strsafe.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -21,12 +23,17 @@ CWinApp theApp;
 
 using namespace std;
 
+static const char DBFILENAME[] = "Producti.db";
+
 /***********************************************************************************************/
 /*	Utility function to check if the file is exists                                       */
 /***********************************************************************************************/
 bool fileExists(LPCWSTR fileName_in)
 {
-	DWORD ftyp = GetFileAttributesW(fileName_in);
+	LPCWSTR lpFileName = TEXT("C:\\DEVELOPMENT\\Producti\\x64\\Debug\\Producti.db");
+	LPCWSTR	path = L"C:\\DEVELOPMENT\\Producti\\x64\\Debug\\Producti.db";
+
+	DWORD ftyp = GetFileAttributesW(lpFileName);
 	if (ftyp == INVALID_FILE_ATTRIBUTES)
 	{
 		cout << "Error: NO SUCH FILE!!!" << endl;
@@ -372,12 +379,61 @@ LPCSTR makeLPCSTR(CString str)
 	return newString;
 }
 
+//int createTable(const char* sqlStr)
+//{
+//	sqlite3 *db;
+//	char *zErrMsg = 0;
+//	int  rc;
+//
+//	/* Open database */
+//	rc = sqlite3_open(DBFILENAME, &db);
+//	if (rc) {
+//		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+//		return(0);
+//	}
+//	else {
+//		//fprintf(stdout, "Opened database successfully\n");
+//	}
+//
+//	/* Execute SQL statement */
+//	rc = sqlite3_exec(db, sqlStr, callback, 0, &zErrMsg);
+//	if (rc != SQLITE_OK) {
+//		fprintf(stderr, "SQL error: %s\n", zErrMsg);
+//		system("pause");
+//		sqlite3_free(zErrMsg);
+//		//return(0);
+//	}
+//	else {
+//		//fprintf(stdout, "Table created successfully\n");
+//	}
+//	sqlite3_close(db);
+//	return 1;
+//}
 
-int main()
+
+
+int main(int args, char * argv[])
 {
 	int nRetCode = 0;
 
-	static const char DBFILENAME[] = "Producti.db";
+	////////////////////////////////////////////
+
+ 	char * path = argv[0];
+
+	wchar_t wtext[256];
+	mbstowcs(wtext, path, strlen(path) + 1);//Plus null
+	
+	LPWSTR ptr = wtext;
+
+	GetFileAttributes(ptr); // from winbase.h
+	if (0xffffffff == GetFileAttributes(ptr))
+	{
+		//File not found
+		int i = 0;
+	}
+
+	////////////////////////////////////////////
+	
 
 	// Check if database file is in the same folder
 	TCHAR exePath[MAX_PATH];
@@ -389,16 +445,25 @@ int main()
 	}
 
 	// remove exe file name from the path
-	TCHAR *folderPath = GetFolderPath(exePath);
+	TCHAR *folderPath = GetFolderPath(ptr);
+	
+	TCHAR szPath[MAX_PATH];
 
-	// add data base file name to the path
-	TCHAR *fileDB = L"Producti.db";
-	_tcscat_s(folderPath, 256, fileDB);
+	const int lengthName = size(DBFILENAME);
 
-	LPCWSTR lpszTest = folderPath;
+	TCHAR fileName[lengthName];
+
+	TCHAR *pFileName = fileName;
+
+	for (int i = 0; i < lengthName; i++)
+	{
+		fileName[i] = DBFILENAME[i];
+	}
+
+	PathAppend(folderPath, pFileName);
 
 	bool rezultBoolFile;
-	rezultBoolFile = fileExists(lpszTest);	// bool dirExists(const std::string& dirName_in)
+	rezultBoolFile = fileExists(folderPath);	// bool dirExists(const std::string& dirName_in)
 	if (!rezultBoolFile)
 	{
 		//	create default database file
