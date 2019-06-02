@@ -10,8 +10,11 @@
 #include "atlstr.h"
 #include <strsafe.h>
 
+#define MAXSTRINGLEN 150
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
+
 #endif
 
 /* Standard error macro for reporting API errors */
@@ -47,16 +50,7 @@ bool fileExists(LPCWSTR fileName_in)
 }
 
 
-void drawSingelCharacter( HANDLE hConsole, LPCTSTR character, COORD coordScreen)
-{
-	DWORD dwConLengt = wcslen(character);
-	DWORD cCharsWritten;
-	BOOL bSuccess = WriteConsoleOutputCharacter(hConsole, character, dwConLengt, coordScreen, &cCharsWritten);
-	PERR(bSuccess, "WriteConsoleOutputCharacter");
-}
-
-
-void drawFrame(HANDLE hConsole)
+COORD getBufSize(HANDLE hConsole)
 {
 	// get current console size
 	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
@@ -68,8 +62,31 @@ void drawFrame(HANDLE hConsole)
 	}
 
 	bufSize = csbiInfo.dwSize;
+	return bufSize;
+}
 
-	
+void drawSingelCharacter( HANDLE hConsole, LPCTSTR character, COORD coordScreen)
+{
+	DWORD dwConLengt = wcslen(character);
+	DWORD cCharsWritten;
+	BOOL bSuccess = WriteConsoleOutputCharacter(hConsole, character, dwConLengt, coordScreen, &cCharsWritten);
+	PERR(bSuccess, "WriteConsoleOutputCharacter");
+}
+
+void drawManyCharacters(HANDLE hConsole, LPCTSTR characters, COORD coordScreen)
+{
+	DWORD dwConLengt = wcslen(characters);
+	DWORD cCharsWritten;
+	BOOL bSuccess = WriteConsoleOutputCharacter(hConsole, characters, dwConLengt, coordScreen, &cCharsWritten);
+	PERR(bSuccess, "WriteConsoleOutputCharacter");
+}
+
+void drawFrame(HANDLE hConsole)
+{
+	// get current console size
+	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	COORD bufSize = getBufSize(hConsole);
+		
 	LPCTSTR character;		// draw corners
 	COORD coordScreen;
 
@@ -119,9 +136,199 @@ void drawFrame(HANDLE hConsole)
 
 	// ╠ ═ ╣
 
+	character = L"╠";	// draw ╠
+	coordScreen = { 0, bufSize.Y - 3 };
+	drawSingelCharacter(hConsole, character, coordScreen);
+
+	character = L"╣";	// draw ╣
+	coordScreen = { bufSize.X - 1, bufSize.Y - 3 };
+	drawSingelCharacter(hConsole, character, coordScreen);
+
+	character = L"═";	// draw ═
+	for (SHORT i = 1; i < bufSize.X - 1; i++)
+	{
+		coordScreen = { i , bufSize.Y - 3 };
+		drawSingelCharacter(hConsole, character, coordScreen);
+	}
+
+	// ╠ ═ ╣
+
+	character = L"╠";	// draw ╠
+	coordScreen = { 0, 2 };
+	drawSingelCharacter(hConsole, character, coordScreen);
+
+	character = L"╣";	// draw ╣
+	coordScreen = { bufSize.X - 1,  2 };
+	drawSingelCharacter(hConsole, character, coordScreen);
+
+	character = L"═";	// draw ═
+	for (SHORT i = 1; i < bufSize.X - 1; i++)
+	{
+		coordScreen = { i , 2 };
+		drawSingelCharacter(hConsole, character, coordScreen);
+	}
+
 
 
 }
+
+
+void printString(HANDLE hConsole, std::vector<wchar_t*> arrayToPrint)
+{
+	// get current console size
+	COORD bufSize = getBufSize(hConsole);
+
+	// calculate width of column if 3 columns
+	//              = (width - frame - space) / 3
+	int columnWidth = (bufSize.X - 2 - 2) / 3;
+	int columnHight = (bufSize.Y - 3 - 3);
+
+	int lengthArray = arrayToPrint.size();
+
+	// start coordinates
+	int xStart = 2;
+	int yStart = 4;
+	int x = xStart;
+	int y = yStart;
+	int columnIndex = 1;
+
+	for (int i = 0; i < lengthArray; i++)
+	{
+
+		size_t n = wcslen(arrayToPrint[i]);
+
+		wchar_t buffer[_MAX_U64TOSTR_BASE10_COUNT];
+		wchar_t * number = _itow((i + 1), buffer, 10);
+
+		wchar_t numberString[4];
+
+		if ((i + 1) < 10)
+		{
+			// add space in front
+			wcscpy(numberString, L" ");
+			wcsncat(numberString, number, 1);
+		}
+		else
+		{
+			wcscpy(numberString, number);
+		}
+
+		wcsncat(numberString, L".", 1);
+
+		wchar_t string[MAXSTRINGLEN + 1];
+		wcscpy(string, numberString);
+
+
+		//wcsncat(string, arrayToPrint[i], __min(n, MAXSTRINGLEN - wcslen(arrayToPrint[i])));
+
+		if ((wcslen(arrayToPrint[i]) + 3) > columnWidth)
+		{
+			// cut and add ".."
+			wcsncat(string, arrayToPrint[i], columnWidth - 5);
+			wcsncat(string, L"..", 2);
+		}
+		else
+		{
+			wcsncat(string, arrayToPrint[i], columnWidth - 3);
+		}
+
+
+		COORD coordScreen = { x, y };
+		drawManyCharacters(hConsole, string, coordScreen);
+		y++;
+		if (y > columnHight)
+		{
+			x = xStart + 1 + columnWidth * columnIndex;
+			y = yStart;
+			columnIndex++;
+		}
+	}
+
+
+}
+
+/// void cls(HANDLE hConsole)
+/// {
+/// 	COORD coordScreen = { 0, 0 };    /* here's where we'll home the
+/// 									 cursor */
+/// 	COORD coordScreen2 = { 40, 0 };
+/// 
+/// 	BOOL bSuccess;
+/// 	DWORD cCharsWritten;
+/// 	CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
+/// 	DWORD dwConSize;                 /* number of character cells in
+/// 									 the current buffer */
+/// 
+/// 									 /* get the number of character cells in the current buffer */
+/// 
+/// 	DWORD dwConLengt;
+/// 
+/// 	// buffer size
+/// 	// Get the current screen buffer size and window position. 
+/// 	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+/// 	COORD bufSize;
+/// 
+/// 	if (!GetConsoleScreenBufferInfo(hConsole, &csbiInfo))
+/// 	{
+/// 		printf("GetConsoleScreenBufferInfo (%d)\n", GetLastError());
+/// 	}
+/// 	else
+/// 	{
+/// 		bufSize = csbiInfo.dwSize;
+/// 	}
+/// 
+/// 	if (bufSize.Y > 25)
+/// 	{
+/// 		COORD dwNewSize = { bufSize.X, 25 };
+/// 		SetConsoleScreenBufferSize(hConsole, dwNewSize);
+/// 	}
+/// 
+/// 	if (!GetConsoleScreenBufferInfo(hConsole, &csbiInfo))
+/// 	{
+/// 		printf("GetConsoleScreenBufferInfo (%d)\n", GetLastError());
+/// 	}
+/// 	else
+/// 	{
+/// 		bufSize = csbiInfo.dwSize;
+/// 	}
+/// 
+/// 	bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
+/// 	PERR(bSuccess, "GetConsoleScreenBufferInfo");
+/// 	dwConSize = (csbi.dwSize.X * csbi.dwSize.Y);
+/// 
+/// 	/* fill the entire screen with blanks */
+/// 
+/// 	bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ',
+/// 		dwConSize, coordScreen, &cCharsWritten);
+/// 	PERR(bSuccess, "FillConsoleOutputCharacter");
+/// 
+/// 	LPCTSTR character = L"-";
+/// 
+/// 	dwConLengt = wcslen(character);
+/// 
+/// 	bSuccess = WriteConsoleOutputCharacter(hConsole, character,
+/// 		dwConLengt, coordScreen2, &cCharsWritten);
+/// 	PERR(bSuccess, "WriteConsoleOutputCharacter");
+/// 
+/// 	/* get the current text attribute */
+/// 
+/// 	bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
+/// 	PERR(bSuccess, "ConsoleScreenBufferInfo");
+/// 
+/// 	/* now set the buffer's attributes accordingly */
+/// 
+/// 	bSuccess = FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
+/// 		dwConSize, coordScreen, &cCharsWritten);
+/// 	PERR(bSuccess, "FillConsoleOutputAttribute");
+/// 
+/// 	/* put the cursor at (0, 0) */
+/// 
+/// 	bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
+/// 	PERR(bSuccess, "SetConsoleCursorPosition");
+/// 	return;
+/// }
+
+
 
 
 void cls(HANDLE hConsole)
@@ -172,6 +379,8 @@ void cls(HANDLE hConsole)
 	Rect.Bottom = 25 - 1;
 	Rect.Right = bufSize.X - 1;
 
+
+
     // Set Window Size 
 	if (!SetConsoleWindowInfo(hConsole, TRUE, &Rect))
 	{
@@ -203,29 +412,6 @@ void cls(HANDLE hConsole)
 		dwConSize, coordScreen, &cCharsWritten);
 	PERR(bSuccess, "FillConsoleOutputCharacter");
 
-	/// LPCTSTR character = L"-";
-	/// 
-	/// dwConLengt = wcslen(character);
-	/// 
-	/// bSuccess = WriteConsoleOutputCharacter(hConsole, character,
-	/// 	dwConLengt, coordScreen2, &cCharsWritten);
-	/// PERR(bSuccess, "WriteConsoleOutputCharacter");
-	/// 
-	/// /* get the current text attribute */
-	/// 
-	/// bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
-	/// PERR(bSuccess, "ConsoleScreenBufferInfo");
-	/// 
-	/// /* now set the buffer's attributes accordingly */
-	/// 
-	/// bSuccess = FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
-	/// 	dwConSize, coordScreen, &cCharsWritten);
-	/// PERR(bSuccess, "FillConsoleOutputAttribute");
-	/// 
-	/// /* put the cursor at (0, 0) */
-	/// 
-	/// bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
-	/// PERR(bSuccess, "SetConsoleCursorPosition");
 	return;
 }
 
@@ -531,25 +717,70 @@ int main(int args, char * argv[])
 			}
 
 
-			COORD  dwCursorPosition = { 0, 10 };
-			SetConsoleCursorPosition(hStdout, dwCursorPosition);
-
-			int age;
-			cin >> age;
-
-			dwCursorPosition = { 1, 11 };
-			SetConsoleCursorPosition(hStdout, dwCursorPosition);
-
-			const VOID    *lpBuffer = L"ddddd";
-			DWORD   nNumberOfCharsToWrite = 5;
-			LPDWORD lpNumberOfCharsWritten = NULL;
-			LPVOID  lpReserved = NULL;
-
-			WriteConsole(hStdout, lpBuffer, nNumberOfCharsToWrite, lpNumberOfCharsWritten, lpReserved);
+			// COORD  dwCursorPosition = { 0, 10 };
+			// SetConsoleCursorPosition(hStdout, dwCursorPosition);
+			// 
+			// int age;
+			// cin >> age;
+			// 
+			// dwCursorPosition = { 1, 11 };
+			// SetConsoleCursorPosition(hStdout, dwCursorPosition);
+			// 
+			// const VOID    *lpBuffer = L"ddddd";
+			// DWORD   nNumberOfCharsToWrite = 5;
+			// LPDWORD lpNumberOfCharsWritten = NULL;
+			// LPVOID  lpReserved = NULL;
+			// 
+			// WriteConsole(hStdout, lpBuffer, nNumberOfCharsToWrite, lpNumberOfCharsWritten, lpReserved);
 
 			// ╔ ═ ╗
 			// ╠ ═ ╣
 			// ╚ ═ ╝
+
+			std:vector<wchar_t*> prodNames;
+			prodNames.push_back(L"Avocado qwertyuiopasdfghjklzxcvbnm");
+			prodNames.push_back(L"Beef");
+			prodNames.push_back(L"Trout");
+			prodNames.push_back(L"Salmon");
+			prodNames.push_back(L"Herring");
+			prodNames.push_back(L"Mackerel");
+			prodNames.push_back(L"Halibut");
+			prodNames.push_back(L"Shrimp");
+			prodNames.push_back(L"Flax oil");
+			prodNames.push_back(L"Coconut oil");
+			prodNames.push_back(L"Akadamia");
+			prodNames.push_back(L"Pecan");
+			prodNames.push_back(L"Brazilian nut");
+			prodNames.push_back(L"Pistachios");
+			prodNames.push_back(L"Almond");
+			prodNames.push_back(L"Pine nut");
+			prodNames.push_back(L"Walnut");
+			prodNames.push_back(L"Broccoli");
+			prodNames.push_back(L"Brussels sprouts");
+			prodNames.push_back(L"Cauliflower");
+			prodNames.push_back(L"Arugula");
+			prodNames.push_back(L"Watercress");
+			prodNames.push_back(L"Sauerkraut");
+			prodNames.push_back(L"Kombucha");
+			prodNames.push_back(L"Yogurt");
+			prodNames.push_back(L"Kvas");
+			prodNames.push_back(L"Kefir");
+			prodNames.push_back(L"Butter");
+			prodNames.push_back(L"Salo");
+			prodNames.push_back(L"Eggs");
+			prodNames.push_back(L"Blueberries");
+			prodNames.push_back(L"Strawberry");
+			prodNames.push_back(L"Raspberries");
+			prodNames.push_back(L"Cranberry");
+			prodNames.push_back(L"Black grapes");
+			prodNames.push_back(L"Green apple");
+			prodNames.push_back(L"Orange");
+			prodNames.push_back(L"Pomegranate");
+			prodNames.push_back(L"Mango");
+
+			printString(hStdout, prodNames);
+
+
 
 
         }
